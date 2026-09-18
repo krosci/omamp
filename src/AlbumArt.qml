@@ -11,6 +11,9 @@ BorderSurface {
   property string fontFamily: Style.font.family
   property real glyphSize: Style.font.displayLarge
   property real inset: Style.space(2)
+  property bool canRaise: false
+
+  signal raiseRequested()
 
   radius: 0
   color: Style.normalFillFor(root.foreground, Color.accent)
@@ -57,5 +60,13 @@ BorderSurface {
     color: root.foreground
     font.family: root.fontFamily
     font.pixelSize: root.glyphSize
+    renderType: Text.NativeRendering
+  }
+
+  MouseArea {
+    anchors.fill: parent
+    enabled: root.canRaise
+    cursorShape: root.canRaise ? Qt.PointingHandCursor : Qt.ArrowCursor
+    onClicked: root.raiseRequested()
   }
 }

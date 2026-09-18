@@ -17,6 +17,7 @@ Item {
   clip: true
 
   onOverflowChanged: if (overflow <= 0) label.x = 0
+  onTextChanged: label.x = 0
 
   Text {
     id: label
@@ -26,6 +27,7 @@ Item {
     font.family: root.fontFamily
     font.pixelSize: root.pixelSize
     font.bold: root.bold
+    renderType: Text.NativeRendering
     horizontalAlignment: Text.AlignLeft
     elide: root.overflow > 0 ? Text.ElideNone : Text.ElideRight
     width: root.overflow > 0 ? implicitWidth : root.width
