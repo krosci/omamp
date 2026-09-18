@@ -12,6 +12,22 @@ function keyFor(player) {
   return player ? String(player.dbusName || player.identity || player.desktopEntry || "") : ""
 }
 
+function playerDisplayName(player) {
+  if (!player) return ""
+  if (player.identity && player.identity !== "") return player.identity
+  var entry = String(player.desktopEntry || "").trim()
+  if (entry) {
+    return entry.charAt(0).toUpperCase() + entry.slice(1)
+  }
+  var dbus = String(player.dbusName || "")
+  dbus = dbus.replace(/^org\.mpris\.MediaPlayer2\./, "")
+  dbus = dbus.replace(/\.instance[0-9]+$/, "")
+  if (dbus) {
+    return dbus.charAt(0).toUpperCase() + dbus.slice(1)
+  }
+  return "Player"
+}
+
 function selectActivePlayer(players, lastActiveAt, preferredKey) {
   if (!players || players.length === 0) return null
 
