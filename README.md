@@ -1,6 +1,6 @@
 # MediaPlayer
 
-MediaPlayer is a native MPRIS bar widget and popup panel plugin for the Omarchy desktop shell. It provides a clean, transparent topbar icon matching system typography and colors, alongside an interactive media panel with album artwork, scrolling track metadata, live time progress seeking, and playback controls.
+MediaPlayer is a native MPRIS bar widget and popup panel plugin for the Omarchy desktop shell. It provides a clean, transparent topbar icon matching system typography and colors, alongside an interactive media panel with album artwork, clean track metadata (automatically stripped of parenthetical/bracketed noise), live time progress seeking, and playback controls.
 
 The plugin communicates directly with MPRIS services via Quickshell, automatically tracking active audio or video sessions across browsers, Spotify, VLC, and other media players without requiring background daemons.
 
@@ -39,7 +39,7 @@ omarchy restart shell
 
 ## Bar Widget Behavior
 
-The topbar widget displays a clean icon using standard Omarchy typography without background boxes or colored highlights. When audio is actively playing, the icon displays the pause symbol, switching to the play symbol when playback is paused.
+The topbar widget displays a clean icon using standard Omarchy typography without background boxes or colored highlights. When audio is actively playing, the icon displays the pause symbol (`󰏤`), switching to the play symbol (`󰐊`) when playback is paused. When no media track is active or loaded, the widget automatically collapses and hides from the bar.
 
 Left clicking the bar icon toggles the popup card. Right clicking toggles playback state directly. Middle clicking advances to the next track. Scrolling the mouse wheel over the icon navigates between previous and next tracks. Hovering reveals track title and artist in the system tooltip.
 
