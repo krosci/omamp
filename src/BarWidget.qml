@@ -33,7 +33,7 @@ BarWidget {
 
   readonly property var activePlayer: MediaModel.selectActivePlayer(players, lastActiveAt, preferredPlayerKey)
   readonly property var sourcePlayers: MediaModel.filterSourcePlayers(players)
-  readonly property bool hasMedia: activePlayer !== null
+  readonly property bool hasMedia: activePlayer !== null && !!(activePlayer.trackTitle || activePlayer.trackArtist || activePlayer.isPlaying)
   readonly property bool isPlaying: !!(activePlayer && activePlayer.isPlaying)
   readonly property string artUrl: activePlayer && activePlayer.trackArtUrl ? activePlayer.trackArtUrl : ""
   readonly property string title: activePlayer ? MediaModel.cleanTitle(activePlayer.trackTitle || "") : ""
@@ -109,9 +109,9 @@ BarWidget {
     }
   }
 
-  visible: true
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  visible: (root.isPlaying || root.panelOpen) && root.hasMedia
+  implicitWidth: visible ? button.implicitWidth : 0
+  implicitHeight: visible ? button.implicitHeight : 0
 
   BarIconButton {
     id: button
