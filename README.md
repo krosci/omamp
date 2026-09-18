@@ -45,7 +45,7 @@ Left clicking the bar icon toggles the popup card. Right clicking toggles playba
 
 ## Media Panel Features
 
-The popup card features masked album artwork with smooth rounded corners, falling back to a musical glyph when art is unavailable. Track titles too long to fit scroll automatically in an infinite loop, accompanied by artist and album subtitles.
+The popup card features masked album artwork with smooth rounded corners, falling back to a musical glyph when art is unavailable. Track titles, artist, and album subtitles are rendered cleanly with system typography.
 
 An interactive time seek bar displays elapsed track time, total duration, and a draggable slider that allows immediate track positioning on supported players.
 
@@ -57,7 +57,7 @@ When multiple media applications are active simultaneously, a source selection a
 
 The project is organized in modular QML and JavaScript files inside the source directory.
 
-BarWidget handles the topbar button, mouse events, and MPRIS bindings. MediaPopup defines the complete popup card layout and source switcher. TimeSlider manages track position updates and seeking interactions. AlbumArt renders masked artwork using hardware-accelerated shaders. MarqueeText provides smooth text scrolling for lengthy titles. MediaModel contains helper routines for player selection, timestamp formatting, and metadata filtering.
+BarWidget handles the topbar button, mouse events, and MPRIS bindings. MediaPopup defines the complete popup card layout and source switcher. TimeSlider manages track position updates and seeking interactions. AlbumArt renders masked artwork using hardware-accelerated shaders. MediaModel contains helper routines for player selection, timestamp formatting, and metadata filtering.
 
 ## License
 

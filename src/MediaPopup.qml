@@ -69,14 +69,16 @@ PopupCard {
             width: parent.width
             spacing: Style.space(6)
 
-            MarqueeText {
+            Text {
+              textFormat: Text.PlainText
               width: Math.max(0, parent.width - (appBadge.visible ? appBadge.width + parent.spacing : 0))
               text: root.title || "Nothing playing"
               color: root.bar ? root.bar.foreground : Color.foreground
-              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-              pixelSize: Style.font.subtitle
-              bold: true
-              active: root.open
+              font.family: root.bar ? root.bar.fontFamily : Style.font.family
+              font.pixelSize: Style.font.subtitle
+              font.bold: true
+              renderType: Text.NativeRendering
+              elide: Text.ElideRight
               anchors.verticalCenter: parent.verticalCenter
             }
 
