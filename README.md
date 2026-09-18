@@ -49,7 +49,11 @@ The popup card features masked album artwork with smooth rounded corners, fallin
 
 An interactive time seek bar displays elapsed track time, total duration, and a draggable slider that allows immediate track positioning on supported players.
 
+A dedicated volume slider allows smooth per-player volume adjustments and one-click mute/unmute toggling.
+
 The control row contains previous track, play and pause toggle, and next track buttons, with optional shuffle and loop controls when supported by the active media application.
+
+An interactive queue and session history view tracks recently played songs, allowing instant review of track titles, artists, and playback durations.
 
 When multiple media applications are active simultaneously, a source selection area appears at the bottom of the card, allowing instant switching between audio streams with a single click.
 
@@ -57,7 +61,7 @@ When multiple media applications are active simultaneously, a source selection a
 
 The project is organized in modular QML and JavaScript files inside the source directory.
 
-BarWidget handles the topbar button, mouse events, and MPRIS bindings. MediaPopup defines the complete popup card layout and source switcher. TimeSlider manages track position updates and seeking interactions. AlbumArt renders masked artwork using hardware-accelerated shaders. MediaModel contains helper routines for player selection, timestamp formatting, and metadata filtering.
+BarWidget handles the topbar button, mouse events, and MPRIS bindings. MediaPopup defines the complete popup card layout, queue view, and source switcher. TimeSlider manages track position updates and seeking interactions. VolumeSlider provides volume adjustment and mute toggling. AlbumArt renders masked artwork using hardware-accelerated shaders. MediaModel contains helper routines for player selection, timestamp formatting, title cleaning, and track queue management.
 
 ## Testing
 

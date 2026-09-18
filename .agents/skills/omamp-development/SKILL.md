@@ -47,8 +47,9 @@ This skill documents the design patterns, MPRIS integration rules, and reload wo
 ## 3. Project Architecture
 
 - **`manifest.json`**: Plugin metadata and entry point (`src/BarWidget.qml`).
-- **`src/BarWidget.qml`**: Bar icon widget, player lifecycle listeners, and popup trigger.
-- **`src/MediaModel.js`**: Pure JS helper library for active player selection, title cleaning, and time formatting.
-- **`src/MediaPopup.qml`**: Full player popup panel, track metadata display, controls, and multi-source switcher.
+- **`src/BarWidget.qml`**: Bar icon widget, player lifecycle listeners, volume control, track queue/history, and popup trigger.
+- **`src/MediaModel.js`**: Pure JS helper library for active player selection, title cleaning, timestamp formatting, and track queue management.
+- **`src/MediaPopup.qml`**: Full player popup panel, track metadata display, volume controls, queue/recents view, and multi-source switcher.
 - **`src/TimeSlider.qml`**: Interactive track seek bar with elapsed and total duration labels.
+- **`src/VolumeSlider.qml`**: Interactive volume slider with dynamic level icons and mute/unmute toggle.
 - **`src/AlbumArt.qml`**: Hardware-accelerated masked artwork renderer with fallback glyph.

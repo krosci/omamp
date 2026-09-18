@@ -97,3 +97,173 @@ function formatTime(seconds) {
   return mins + ":" + secsStr
 }
 
+function updateTrackHistory(historyList, currentTrack, maxItems) {
+  if (!currentTrack || (!currentTrack.title && !currentTrack.artist)) {
+    return Array.isArray(historyList) ? historyList : []
+  }
+  var list = Array.isArray(historyList) ? historyList.slice() : []
+  var max = typeof maxItems === "number" && maxItems > 0 ? maxItems : 25
+  var title = cleanTitle(currentTrack.title || "")
+  var artist = String(currentTrack.artist || "").trim()
+  var album = String(currentTrack.album || "").trim()
+  var playerKey = String(currentTrack.playerKey || "")
+
+  if (!title && !artist) return list
+
+  // Check if first item in list matches current track
+  if (list.length > 0 && list[0].title === title && list[0].artist === artist && list[0].playerKey === playerKey) {
+    var updatedFirst = Object.assign({}, list[0], {
+      isCurrent: true,
+      artUrl: currentTrack.artUrl || list[0].artUrl,
+      length: currentTrack.length || list[0].length,
+      isPlaying: !!currentTrack.isPlaying
+    })
+    list[0] = updatedFirst
+    for (var i = 1; i < list.length; i++) {
+      if (list[i].isCurrent) {
+        list[i] = Object.assign({}, list[i], { isCurrent: false, isPlaying: false })
+      }
+    }
+    return list
+  }
+
+  // Mark all previous items as not current
+  for (var j = 0; j < list.length; j++) {
+    if (list[j].isCurrent) {
+      list[j] = Object.assign({}, list[j], { isCurrent: false, isPlaying: false })
+    }
+  }
+
+  var newItem = {
+    id: playerKey + ":" + title + ":" + artist + ":" + Date.now(),
+    title: title,
+    artist: artist,
+    album: album,
+    artUrl: currentTrack.artUrl || "",
+    length: currentTrack.length || 0,
+    playerKey: playerKey,
+    isCurrent: true,
+    isPlaying: !!currentTrack.isPlaying,
+    timestamp: Date.now()
+  }
+
+  list.unshift(newItem)
+  if (list.length > max) list.pop()
+  return list
+}
+
+function unwrapBusctlValue(obj) {
+  if (obj === null || obj === undefined) return obj
+  if (typeof obj !== "object") return obj
+  if (Array.isArray(obj)) {
+    return obj.map(unwrapBusctlValue)
+  }
+  if (Object.prototype.hasOwnProperty.call(obj, "type") && Object.prototype.hasOwnProperty.call(obj, "data")) {
+    return unwrapBusctlValue(obj.data)
+  }
+  var res = {}
+  for (var k in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, k)) {
+      res[k] = unwrapBusctlValue(obj[k])
+    }
+  }
+  return res
+}
+
+function parseBusctlTracksMetadata(jsonStr, currentTrackId, playerKey, currentTitle) {
+  if (!jsonStr || typeof jsonStr !== "string") return []
+  try {
+    var parsed = JSON.parse(jsonStr)
+    var unwrapped = unwrapBusctlValue(parsed)
+    if (Array.isArray(unwrapped)) {
+      if (unwrapped.length === 1 && Array.isArray(unwrapped[0])) {
+        unwrapped = unwrapped[0]
+      }
+      return parseNativeTrackList(unwrapped, currentTrackId, playerKey, currentTitle)
+    }
+  } catch (e) {
+    return []
+  }
+  return []
+}
+
+function parseNativeTrackList(metadataArray, currentTrackId, playerKey, currentTitle) {
+  if (!Array.isArray(metadataArray) || metadataArray.length === 0) return []
+  var list = []
+  for (var i = 0; i < metadataArray.length; i++) {
+    var item = metadataArray[i]
+    if (!item) continue
+    var trackId = String(item["mpris:trackid"] || item.trackid || item.id || "")
+    var title = cleanTitle(String(item["xesam:title"] || item.title || item.trackTitle || ""))
+    var artist = item["xesam:artist"] || item.artist || item.trackArtist || ""
+    if (Array.isArray(artist)) artist = artist.join(", ")
+    else artist = String(artist)
+    var album = String(item["xesam:album"] || item.album || "")
+    var artUrl = String(item["mpris:artUrl"] || item.artUrl || "")
+    var length = Number(item["mpris:length"] || item.length || 0)
+    if (length > 1000000) length = length / 1000000
+
+    if (!title && !artist) continue
+
+    var isCurrent = false
+    if (currentTrackId && trackId) {
+      isCurrent = (trackId === currentTrackId)
+    } else if (currentTitle) {
+      isCurrent = (cleanTitle(title) === cleanTitle(currentTitle))
+    }
+
+    list.push({
+      id: trackId || (playerKey + ":" + title + ":" + i),
+      trackId: trackId,
+      title: title,
+      artist: artist,
+      album: album,
+      artUrl: artUrl,
+      length: length,
+      playerKey: playerKey || "",
+      isCurrent: isCurrent,
+      isNative: true
+    })
+  }
+  return list
+}
+
+function extractUpcomingTracks(trackList, currentTrackId, currentTitle) {
+  if (!Array.isArray(trackList) || trackList.length === 0) return []
+  var currentIndex = -1
+  for (var i = 0; i < trackList.length; i++) {
+    var item = trackList[i]
+    if (item.isCurrent) {
+      currentIndex = i
+      break
+    }
+    if (currentTrackId && item.trackId === currentTrackId) {
+      currentIndex = i
+      break
+    }
+    if (currentTitle && cleanTitle(item.title) === cleanTitle(currentTitle)) {
+      currentIndex = i
+      break
+    }
+  }
+
+  if (currentIndex >= 0) {
+    var upcoming = []
+    for (var j = currentIndex + 1; j < trackList.length; j++) {
+      var track = Object.assign({}, trackList[j], {
+        queueIndex: j - currentIndex,
+        isUpcoming: true,
+        isCurrent: false
+      })
+      upcoming.push(track)
+    }
+    return upcoming
+  }
+
+  return []
+}
+
+
+
+
+

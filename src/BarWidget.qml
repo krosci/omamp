@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import qs.Ui
 import qs.Commons
@@ -47,6 +48,190 @@ BarWidget {
   property bool isSeeking: false
   readonly property bool canSeek: !!(activePlayer && (activePlayer.canSeek || activePlayer.positionSupported))
 
+  property real volume: activePlayer && typeof activePlayer.volume === "number" ? activePlayer.volume : 1.0
+  readonly property bool volumeSupported: !!(activePlayer && (activePlayer.volumeSupported || typeof activePlayer.volume === "number"))
+
+  function setVolume(val) {
+    if (activePlayer && (activePlayer.volumeSupported || typeof activePlayer.volume === "number")) {
+      var clamped = Math.max(0, Math.min(1.0, val))
+      activePlayer.volume = clamped
+      root.volume = clamped
+    }
+  }
+
+  property var nativeQueue: []
+  property var upcomingQueue: []
+  readonly property bool hasNativeQueue: nativeQueue.length > 0
+  readonly property bool hasUpcomingQueue: upcomingQueue.length > 0
+
+  function updateUpcomingQueue() {
+    upcomingQueue = MediaModel.extractUpcomingTracks(root.nativeQueue, "", root.title)
+  }
+
+  function queryTrackList() {
+    if (!root.activePlayer || !root.activePlayer.dbusName) {
+      nativeQueue = []
+      upcomingQueue = []
+      return
+    }
+    trackListProc.command = [
+      "busctl", "--user", "--json=short", "get-property",
+      root.activePlayer.dbusName,
+      "/org/mpris/MediaPlayer2",
+      "org.mpris.MediaPlayer2",
+      "HasTrackList"
+    ]
+    trackListProc.running = false
+    trackListProc.running = true
+  }
+
+  function goToTrack(trackId) {
+    if (root.activePlayer && root.activePlayer.dbusName && trackId && String(trackId).startsWith("/")) {
+      goToProc.command = [
+        "busctl", "--user", "call",
+        root.activePlayer.dbusName,
+        "/org/mpris/MediaPlayer2",
+        "org.mpris.MediaPlayer2.TrackList",
+        "GoTo", "o", String(trackId)
+      ]
+      goToProc.running = false
+      goToProc.running = true
+    }
+  }
+
+  property var trackHistory: []
+
+  function updateHistory() {
+    if (!root.hasMedia || !root.title) return
+    var item = {
+      title: root.title,
+      artist: root.artist,
+      album: root.album,
+      artUrl: root.artUrl,
+      length: root.trackLength,
+      playerKey: MediaModel.keyFor(root.activePlayer),
+      isPlaying: root.isPlaying
+    }
+    trackHistory = MediaModel.updateTrackHistory(root.trackHistory, item, 25)
+  }
+
+  onNativeQueueChanged: updateUpcomingQueue()
+  onTitleChanged: {
+    updateHistory()
+    queryTrackList()
+    updateUpcomingQueue()
+  }
+  onArtistChanged: updateHistory()
+  onIsPlayingChanged: updateHistory()
+  onActivePlayerChanged: {
+    updateHistory()
+    queryTrackList()
+    updateUpcomingQueue()
+  }
+
+  function clearHistory() {
+    trackHistory = []
+  }
+
+  Process {
+    id: goToProc
+  }
+
+  Process {
+    id: trackListProc
+    stdout: SplitParser {
+      onRead: function(line) {
+        var str = String(line).trim()
+        if (!str) return
+        try {
+          var parsed = JSON.parse(str)
+          if (parsed && parsed.data === true && root.activePlayer && root.activePlayer.dbusName) {
+            fetchTracksProc.command = [
+              "busctl", "--user", "--json=short", "get-property",
+              root.activePlayer.dbusName,
+              "/org/mpris/MediaPlayer2",
+              "org.mpris.MediaPlayer2.TrackList",
+              "Tracks"
+            ]
+            fetchTracksProc.running = false
+            fetchTracksProc.running = true
+            return
+          }
+        } catch (e) {}
+        if (str === "b true" && root.activePlayer && root.activePlayer.dbusName) {
+          fetchTracksProc.command = [
+            "busctl", "--user", "--json=short", "get-property",
+            root.activePlayer.dbusName,
+            "/org/mpris/MediaPlayer2",
+            "org.mpris.MediaPlayer2.TrackList",
+            "Tracks"
+          ]
+          fetchTracksProc.running = false
+          fetchTracksProc.running = true
+        } else {
+          root.nativeQueue = []
+        }
+      }
+    }
+  }
+
+  Process {
+    id: fetchTracksProc
+    stdout: SplitParser {
+      onRead: function(line) {
+        var str = String(line).trim()
+        if (!str || !root.activePlayer || !root.activePlayer.dbusName) return
+        var paths = []
+        try {
+          var parsed = JSON.parse(str)
+          if (parsed && Array.isArray(parsed.data)) {
+            paths = parsed.data
+          }
+        } catch (e) {}
+        if (paths.length === 0 && str.startsWith("ao ")) {
+          var parts = str.split(" ")
+          var count = parseInt(parts[1], 10)
+          if (!isNaN(count) && count > 0) {
+            paths = parts.slice(2).map(function(p) { return p.replace(/"/g, "") })
+          }
+        }
+        if (paths.length > 0) {
+          var cmd = [
+            "busctl", "--user", "--json=short", "call",
+            root.activePlayer.dbusName,
+            "/org/mpris/MediaPlayer2",
+            "org.mpris.MediaPlayer2.TrackList",
+            "GetTracksMetadata",
+            "ao",
+            String(paths.length)
+          ]
+          for (var k = 0; k < paths.length; k++) cmd.push(paths[k])
+          getMetadataProc.command = cmd
+          getMetadataProc.running = false
+          getMetadataProc.running = true
+        } else {
+          root.nativeQueue = []
+        }
+      }
+    }
+  }
+
+  Process {
+    id: getMetadataProc
+    stdout: SplitParser {
+      onRead: function(line) {
+        var str = String(line).trim()
+        if (!str || !root.activePlayer) return
+        var currentId = root.activePlayer.trackId || ""
+        var pKey = MediaModel.keyFor(root.activePlayer)
+        var parsedList = MediaModel.parseBusctlTracksMetadata(str, currentId, pKey, root.title)
+        if (parsedList && parsedList.length > 0) {
+          root.nativeQueue = parsedList
+        }
+      }
+    }
+  }
+
   property bool panelOpen: false
   function close() { panelOpen = false }
 
@@ -62,7 +247,7 @@ BarWidget {
       function onIsPlayingChanged() { root.touch(modelData) }
       function onTrackTitleChanged() { root.touch(modelData) }
       function onTrackArtistChanged() { root.touch(modelData) }
-      function onPlaybackStatusChanged() { root.touch(modelData) }
+      function onPlaybackStateChanged() { root.touch(modelData) }
     }
   }
 
@@ -76,6 +261,11 @@ BarWidget {
     function onLengthChanged() {
       if (root.activePlayer) {
         root.trackLength = root.activePlayer.length > 0 ? root.activePlayer.length : 0
+      }
+    }
+    function onVolumeChanged() {
+      if (root.activePlayer && typeof root.activePlayer.volume === "number") {
+        root.volume = root.activePlayer.volume
       }
     }
   }

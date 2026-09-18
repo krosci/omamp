@@ -157,3 +157,209 @@ describe("MediaModel.filterSourcePlayers", () => {
     assert.equal(list[0], active);
   });
 });
+
+describe("MediaModel.updateTrackHistory", () => {
+  test("adds initial track to empty history", () => {
+    const track = { title: "Track A", artist: "Artist A", playerKey: "p1", isPlaying: true, length: 180 };
+    const history = MediaModel.updateTrackHistory([], track, 10);
+    assert.equal(history.length, 1);
+    assert.equal(history[0].title, "Track A");
+    assert.equal(history[0].isCurrent, true);
+    assert.equal(history[0].isPlaying, true);
+  });
+
+  test("prepends new track and unmarks previous as current", () => {
+    const track1 = { title: "Track A", artist: "Artist A", playerKey: "p1", isPlaying: false };
+    const track2 = { title: "Track B (feat. X)", artist: "Artist B", playerKey: "p1", isPlaying: true };
+    let history = MediaModel.updateTrackHistory([], track1, 10);
+    history = MediaModel.updateTrackHistory(history, track2, 10);
+    assert.equal(history.length, 2);
+    assert.equal(history[0].title, "Track B"); // Cleaned
+    assert.equal(history[0].isCurrent, true);
+    assert.equal(history[1].title, "Track A");
+    assert.equal(history[1].isCurrent, false);
+  });
+
+  test("updates current track without creating duplicates if identical", () => {
+    const track1 = { title: "Track A", artist: "Artist A", playerKey: "p1", isPlaying: false };
+    const track1Playing = { title: "Track A", artist: "Artist A", playerKey: "p1", isPlaying: true };
+    let history = MediaModel.updateTrackHistory([], track1, 10);
+    history = MediaModel.updateTrackHistory(history, track1Playing, 10);
+    assert.equal(history.length, 1);
+    assert.equal(history[0].isPlaying, true);
+  });
+
+  test("limits history to maxItems", () => {
+    let history = [];
+    for (let i = 1; i <= 10; i++) {
+      history = MediaModel.updateTrackHistory(history, { title: "Track " + i, artist: "Artist", playerKey: "p1" }, 5);
+    }
+    assert.equal(history.length, 5);
+    assert.equal(history[0].title, "Track 10");
+  });
+
+  test("returns original list for invalid or empty tracks", () => {
+    const history = [{ title: "Existing", isCurrent: true }];
+    assert.equal(MediaModel.updateTrackHistory(history, null).length, 1);
+    assert.equal(MediaModel.updateTrackHistory(history, { title: "", artist: "" }).length, 1);
+  });
+});
+
+describe("MediaModel.parseNativeTrackList", () => {
+  test("parses array of MPRIS track metadata objects", () => {
+    const raw = [
+      {
+        "mpris:trackid": "/org/mpris/MediaPlayer2/Track/1",
+        "xesam:title": "Song 1 (feat. Artist)",
+        "xesam:artist": ["Band Name"],
+        "xesam:album": "Album 1",
+        "mpris:length": 180000000
+      },
+      {
+        "mpris:trackid": "/org/mpris/MediaPlayer2/Track/2",
+        "xesam:title": "Song 2 [Live]",
+        "xesam:artist": "Solo Artist",
+        "xesam:album": "Album 2",
+        "mpris:length": 210
+      }
+    ];
+
+    const result = MediaModel.parseNativeTrackList(raw, "/org/mpris/MediaPlayer2/Track/1", "vlc");
+    assert.equal(result.length, 2);
+    assert.equal(result[0].title, "Song 1"); // Cleaned
+    assert.equal(result[0].artist, "Band Name");
+    assert.equal(result[0].length, 180); // Converted from microseconds
+    assert.equal(result[0].isCurrent, true);
+    assert.equal(result[0].isNative, true);
+
+    assert.equal(result[1].title, "Song 2");
+    assert.equal(result[1].artist, "Solo Artist");
+    assert.equal(result[1].length, 210);
+    assert.equal(result[1].isCurrent, false);
+  });
+
+  test("matches current track by title when trackId is not provided", () => {
+    const raw = [
+      { "xesam:title": "Song One (Remix)", "xesam:artist": "Artist 1" },
+      { "xesam:title": "Song Two", "xesam:artist": "Artist 2" }
+    ];
+    const result = MediaModel.parseNativeTrackList(raw, null, "spotify", "Song One");
+    assert.equal(result[0].isCurrent, true);
+    assert.equal(result[1].isCurrent, false);
+  });
+
+  test("handles empty or invalid inputs", () => {
+    assert.equal(MediaModel.parseNativeTrackList(null).length, 0);
+    assert.equal(MediaModel.parseNativeTrackList([]).length, 0);
+    assert.equal(MediaModel.parseNativeTrackList([{}, { title: "" }]).length, 0);
+  });
+});
+
+describe("MediaModel.unwrapBusctlValue & parseBusctlTracksMetadata", () => {
+  test("unwraps busctl typed dictionary responses", () => {
+    const input = {
+      type: "a{sv}",
+      data: {
+        title: { type: "s", data: "Hello World" },
+        count: { type: "i", data: 42 },
+        active: { type: "b", data: true },
+        tags: { type: "as", data: ["a", "b"] }
+      }
+    };
+    const unwrapped = JSON.parse(JSON.stringify(MediaModel.unwrapBusctlValue(input)));
+    assert.deepEqual(unwrapped, {
+      title: "Hello World",
+      count: 42,
+      active: true,
+      tags: ["a", "b"]
+    });
+  });
+
+  test("parses busctl JSON output into track list", () => {
+    const busctlJson = JSON.stringify({
+      type: "aa{sv}",
+      data: [
+        [
+          {
+            "mpris:trackid": { type: "o", data: "/org/mpris/MediaPlayer2/Track/1" },
+            "xesam:title": { type: "s", data: "Busctl Track 1 (feat. Singer)" },
+            "xesam:artist": { type: "as", data: ["Producer", "Singer"] },
+            "xesam:album": { type: "s", data: "EP 1" },
+            "mpris:length": { type: "t", data: 240000000 }
+          },
+          {
+            "mpris:trackid": { type: "o", data: "/org/mpris/MediaPlayer2/Track/2" },
+            "xesam:title": { type: "s", data: "Busctl Track 2" },
+            "xesam:artist": { type: "s", data: "Producer" },
+            "mpris:length": { type: "t", data: 180000000 }
+          }
+        ]
+      ]
+    });
+
+    const list = MediaModel.parseBusctlTracksMetadata(busctlJson, "/org/mpris/MediaPlayer2/Track/1", "player1");
+    assert.equal(list.length, 2);
+    assert.equal(list[0].title, "Busctl Track 1");
+    assert.equal(list[0].artist, "Producer, Singer");
+    assert.equal(list[0].length, 240);
+    assert.equal(list[0].isCurrent, true);
+    assert.equal(list[0].isNative, true);
+
+    assert.equal(list[1].title, "Busctl Track 2");
+    assert.equal(list[1].isCurrent, false);
+  });
+
+  test("handles invalid JSON or empty input gracefully", () => {
+    assert.equal(MediaModel.parseBusctlTracksMetadata("").length, 0);
+    assert.equal(MediaModel.parseBusctlTracksMetadata(null).length, 0);
+    assert.equal(MediaModel.parseBusctlTracksMetadata("{ invalid json").length, 0);
+    assert.equal(MediaModel.parseBusctlTracksMetadata(JSON.stringify({ data: "not an array" })).length, 0);
+  });
+});
+
+describe("MediaModel.extractUpcomingTracks", () => {
+  test("extracts upcoming tracks strictly following current track", () => {
+    const tracks = [
+      { trackId: "/track/1", title: "Song 1", isCurrent: false },
+      { trackId: "/track/2", title: "Song 2", isCurrent: true },
+      { trackId: "/track/3", title: "Song 3", isCurrent: false },
+      { trackId: "/track/4", title: "Song 4", isCurrent: false }
+    ];
+
+    const upcoming = MediaModel.extractUpcomingTracks(tracks, "/track/2", "Song 2");
+    assert.equal(upcoming.length, 2);
+    assert.equal(upcoming[0].title, "Song 3");
+    assert.equal(upcoming[0].queueIndex, 1);
+    assert.equal(upcoming[0].isUpcoming, true);
+    assert.equal(upcoming[1].title, "Song 4");
+    assert.equal(upcoming[1].queueIndex, 2);
+  });
+
+  test("returns empty array when current track is the last in the queue", () => {
+    const tracks = [
+      { trackId: "/track/1", title: "Song 1", isCurrent: false },
+      { trackId: "/track/2", title: "Song 2", isCurrent: true }
+    ];
+    const upcoming = MediaModel.extractUpcomingTracks(tracks, "/track/2", "Song 2");
+    assert.equal(upcoming.length, 0);
+  });
+
+  test("matches current track by title when trackId is absent", () => {
+    const tracks = [
+      { title: "Song A (Remix)" },
+      { title: "Song B" }
+    ];
+    const upcoming = MediaModel.extractUpcomingTracks(tracks, "", "Song A");
+    assert.equal(upcoming.length, 1);
+    assert.equal(upcoming[0].title, "Song B");
+  });
+
+  test("handles empty or invalid lists", () => {
+    assert.equal(MediaModel.extractUpcomingTracks(null).length, 0);
+    assert.equal(MediaModel.extractUpcomingTracks([]).length, 0);
+  });
+});
+
+
+
+

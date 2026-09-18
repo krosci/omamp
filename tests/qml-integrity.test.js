@@ -11,6 +11,7 @@ describe("QML Components Integrity", () => {
     assert.ok(qmlFiles.includes("BarWidget.qml"));
     assert.ok(qmlFiles.includes("MediaPopup.qml"));
     assert.ok(qmlFiles.includes("TimeSlider.qml"));
+    assert.ok(qmlFiles.includes("VolumeSlider.qml"));
     assert.ok(qmlFiles.includes("AlbumArt.qml"));
   });
 
