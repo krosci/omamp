@@ -19,6 +19,9 @@ PopupCard {
   readonly property real trackLength: playerWidget ? playerWidget.trackLength : 0
   readonly property bool canSeek: playerWidget ? playerWidget.canSeek : false
 
+  readonly property bool shuffleSupported: activePlayer ? activePlayer.shuffleSupported : false
+  readonly property bool loopSupported: activePlayer ? activePlayer.loopSupported : false
+
   contentWidth: root.fittedContentWidth(Style.space(320))
   contentHeight: root.fittedContentHeight(layout.implicitHeight)
 
@@ -107,54 +110,101 @@ PopupCard {
         }
       }
 
-      // Playback Controls Row: perfectly aligned on the same horizontal line with identical height
+      // Playback Controls Row: perfectly aligned on a single straight horizontal line
       Row {
+        id: controlsRow
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Style.space(8)
+        spacing: Style.space(6)
 
         Button {
+          id: shuffleBtn
+          radius: 0
+          iconText: "󰒝"
+          tooltipText: "Shuffle"
+          foreground: root.bar ? root.bar.foreground : Color.foreground
+          iconSize: Style.font.icon
+          width: Style.space(34)
+          height: Style.space(30)
+          horizontalPadding: 0
+          verticalPadding: 0
+          anchors.verticalCenter: parent.verticalCenter
+          selected: root.activePlayer && root.activePlayer.shuffle
+          enabled: root.activePlayer && root.shuffleSupported
+          opacity: enabled ? 1.0 : 0.35
+          onClicked: if (root.activePlayer) root.activePlayer.shuffle = !root.activePlayer.shuffle
+        }
+
+        Button {
+          id: prevBtn
           radius: 0
           iconText: "󰒮"
           tooltipText: "Previous"
           foreground: root.bar ? root.bar.foreground : Color.foreground
           iconSize: Style.font.icon
-          implicitWidth: Style.space(48)
-          implicitHeight: Style.space(32)
+          width: Style.space(38)
+          height: Style.space(30)
           horizontalPadding: 0
           verticalPadding: 0
+          anchors.verticalCenter: parent.verticalCenter
           enabled: root.activePlayer && root.activePlayer.canGoPrevious
-          opacity: enabled ? 1.0 : 0.4
+          opacity: enabled ? 1.0 : 0.35
           onClicked: if (root.playerWidget) root.playerWidget.runAction("previous")
         }
 
         Button {
+          id: playPauseBtn
           radius: 0
           iconText: root.isPlaying ? "󰏤" : "󰐊"
           tooltipText: root.isPlaying ? "Pause" : "Play"
           foreground: root.bar ? root.bar.foreground : Color.foreground
           iconSize: Style.font.icon
-          implicitWidth: Style.space(56)
-          implicitHeight: Style.space(32)
+          width: Style.space(48)
+          height: Style.space(30)
           horizontalPadding: 0
           verticalPadding: 0
+          anchors.verticalCenter: parent.verticalCenter
           enabled: root.activePlayer && (root.activePlayer.canTogglePlaying || root.activePlayer.canPlay || root.activePlayer.canPause)
-          opacity: enabled ? 1.0 : 0.4
+          opacity: enabled ? 1.0 : 0.35
           onClicked: if (root.playerWidget) root.playerWidget.runAction("playPause")
         }
 
         Button {
+          id: nextBtn
           radius: 0
           iconText: "󰒭"
           tooltipText: "Next"
           foreground: root.bar ? root.bar.foreground : Color.foreground
           iconSize: Style.font.icon
-          implicitWidth: Style.space(48)
-          implicitHeight: Style.space(32)
+          width: Style.space(38)
+          height: Style.space(30)
           horizontalPadding: 0
           verticalPadding: 0
+          anchors.verticalCenter: parent.verticalCenter
           enabled: root.activePlayer && root.activePlayer.canGoNext
-          opacity: enabled ? 1.0 : 0.4
+          opacity: enabled ? 1.0 : 0.35
           onClicked: if (root.playerWidget) root.playerWidget.runAction("next")
+        }
+
+        Button {
+          id: loopBtn
+          radius: 0
+          iconText: (root.activePlayer && root.activePlayer.loopState === 1) ? "󰑘" : "󰑖"
+          tooltipText: "Loop"
+          foreground: root.bar ? root.bar.foreground : Color.foreground
+          iconSize: Style.font.icon
+          width: Style.space(34)
+          height: Style.space(30)
+          horizontalPadding: 0
+          verticalPadding: 0
+          anchors.verticalCenter: parent.verticalCenter
+          selected: root.activePlayer && root.activePlayer.loopState > 0
+          enabled: root.activePlayer && root.loopSupported
+          opacity: enabled ? 1.0 : 0.35
+          onClicked: {
+            if (!root.activePlayer) return
+            var nextState = (root.activePlayer.loopState + 1) % 3
+            root.activePlayer.loopState = nextState
+          }
         }
       }
 
