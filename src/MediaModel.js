@@ -69,6 +69,20 @@ function filterSourcePlayers(players) {
   return list
 }
 
+function cleanTitle(title) {
+  if (!title || typeof title !== "string") return ""
+  var cleaned = title
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s*\[[^\]]*\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  return cleaned !== "" ? cleaned : title.trim()
+}
+
+function formatTitle(title) {
+  return cleanTitle(title)
+}
+
 function formatTime(seconds) {
   if (!seconds || isNaN(seconds) || seconds < 0) return "0:00"
   var total = Math.floor(seconds)
@@ -82,3 +96,4 @@ function formatTime(seconds) {
   }
   return mins + ":" + secsStr
 }
+

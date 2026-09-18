@@ -269,7 +269,7 @@ PopupCard {
             readonly property var player: modelData
             readonly property bool selected: root.activePlayer && player
               && MediaModel.keyFor(root.activePlayer) === MediaModel.keyFor(player)
-            readonly property string sourceTitle: player ? (player.trackTitle || player.identity || player.desktopEntry || "Media source") : "Media source"
+            readonly property string sourceTitle: player ? (MediaModel.cleanTitle(player.trackTitle) || player.identity || player.desktopEntry || "Media source") : "Media source"
             readonly property string sourceDetail: player && player.trackArtist ? player.trackArtist : (player && player.identity ? player.identity : "")
 
             width: sourceList.width

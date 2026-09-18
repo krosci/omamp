@@ -36,7 +36,7 @@ BarWidget {
   readonly property bool hasMedia: activePlayer !== null
   readonly property bool isPlaying: !!(activePlayer && activePlayer.isPlaying)
   readonly property string artUrl: activePlayer && activePlayer.trackArtUrl ? activePlayer.trackArtUrl : ""
-  readonly property string title: activePlayer ? (activePlayer.trackTitle || "") : ""
+  readonly property string title: activePlayer ? MediaModel.cleanTitle(activePlayer.trackTitle || "") : ""
   readonly property string artist: activePlayer ? (activePlayer.trackArtist || "") : ""
   readonly property string album: activePlayer && activePlayer.trackAlbum ? activePlayer.trackAlbum : ""
   readonly property string identity: activePlayer ? (activePlayer.identity || activePlayer.desktopEntry || "") : ""
