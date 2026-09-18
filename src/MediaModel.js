@@ -1,7 +1,7 @@
 .pragma library
 
 function hasMetadata(player) {
-  return !!(player && (player.trackTitle || player.trackArtist || player.identity || player.desktopEntry))
+  return !!(player && (player.isPlaying || player.trackTitle || player.trackArtist))
 }
 
 function hasTrackMetadata(player) {

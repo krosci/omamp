@@ -61,6 +61,8 @@ BarWidget {
       target: modelData
       function onIsPlayingChanged() { root.touch(modelData) }
       function onTrackTitleChanged() { root.touch(modelData) }
+      function onTrackArtistChanged() { root.touch(modelData) }
+      function onPlaybackStatusChanged() { root.touch(modelData) }
     }
   }
 
@@ -109,7 +111,7 @@ BarWidget {
     }
   }
 
-  visible: (root.isPlaying || root.panelOpen) && root.hasMedia
+  visible: root.hasMedia
   implicitWidth: visible ? button.implicitWidth : 0
   implicitHeight: visible ? button.implicitHeight : 0
 
