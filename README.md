@@ -59,6 +59,15 @@ The project is organized in modular QML and JavaScript files inside the source d
 
 BarWidget handles the topbar button, mouse events, and MPRIS bindings. MediaPopup defines the complete popup card layout and source switcher. TimeSlider manages track position updates and seeking interactions. AlbumArt renders masked artwork using hardware-accelerated shaders. MediaModel contains helper routines for player selection, timestamp formatting, and metadata filtering.
 
+## Testing
+
+Run the automated test suite covering metadata parsing, title cleaning, time formatting, player selection, manifest validation, and QML component integrity:
+
+```bash
+npm test
+```
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for complete terms.
+
