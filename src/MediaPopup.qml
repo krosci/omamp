@@ -19,8 +19,10 @@ PopupCard {
   readonly property real trackLength: playerWidget ? playerWidget.trackLength : 0
   readonly property bool canSeek: playerWidget ? playerWidget.canSeek : false
 
+  readonly property bool canRaise: activePlayer ? (activePlayer.canRaise === true) : false
   readonly property bool shuffleSupported: activePlayer ? activePlayer.shuffleSupported : false
   readonly property bool loopSupported: activePlayer ? activePlayer.loopSupported : false
+  readonly property string appName: MediaModel.playerDisplayName(activePlayer)
 
   contentWidth: root.fittedContentWidth(Style.space(320))
   contentHeight: root.fittedContentHeight(layout.implicitHeight)
@@ -48,8 +50,14 @@ PopupCard {
           height: root.artSize
           anchors.verticalCenter: parent.verticalCenter
           artSource: root.artUrl
+          canRaise: root.canRaise
           foreground: root.bar ? root.bar.foreground : Color.foreground
           fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+          onRaiseRequested: {
+            if (root.activePlayer && root.activePlayer.canRaise) {
+              root.activePlayer.raise()
+            }
+          }
         }
 
         Column {
@@ -57,14 +65,43 @@ PopupCard {
           anchors.verticalCenter: parent.verticalCenter
           spacing: Style.space(3)
 
-          MarqueeText {
+          Row {
             width: parent.width
-            text: root.title || "Nothing playing"
-            color: root.bar ? root.bar.foreground : Color.foreground
-            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-            pixelSize: Style.font.subtitle
-            bold: true
-            active: root.open
+            spacing: Style.space(6)
+
+            MarqueeText {
+              width: Math.max(0, parent.width - (appBadge.visible ? appBadge.width + parent.spacing : 0))
+              text: root.title || "Nothing playing"
+              color: root.bar ? root.bar.foreground : Color.foreground
+              fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+              pixelSize: Style.font.subtitle
+              bold: true
+              active: root.open
+              anchors.verticalCenter: parent.verticalCenter
+            }
+
+            BorderSurface {
+              id: appBadge
+              visible: root.appName !== ""
+              radius: 0
+              anchors.verticalCenter: parent.verticalCenter
+              implicitWidth: appLabel.implicitWidth + Style.space(8)
+              implicitHeight: appLabel.implicitHeight + Style.space(2)
+              color: "transparent"
+              borderSpec: Border.controlSpec("normal", root.bar ? root.bar.foreground : Color.foreground, Color.accent)
+
+              Text {
+                id: appLabel
+                textFormat: Text.PlainText
+                anchors.centerIn: parent
+                text: root.appName.toUpperCase()
+                color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.4)
+                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                font.pixelSize: Style.font.caption - 2
+                font.bold: true
+                renderType: Text.NativeRendering
+              }
+            }
           }
 
           Text {
@@ -73,6 +110,7 @@ PopupCard {
             color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.3)
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.bodySmall
+            renderType: Text.NativeRendering
             elide: Text.ElideRight
             width: parent.width
             visible: text !== ""
@@ -84,6 +122,7 @@ PopupCard {
             color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.6)
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.caption
+            renderType: Text.NativeRendering
             elide: Text.ElideRight
             width: parent.width
             visible: text !== ""
@@ -255,6 +294,7 @@ PopupCard {
                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                 font.pixelSize: Style.font.body
                 width: Style.space(16)
+                renderType: Text.NativeRendering
                 horizontalAlignment: Text.AlignHCenter
                 anchors.verticalCenter: parent.verticalCenter
               }
@@ -271,6 +311,7 @@ PopupCard {
                   font.family: root.bar ? root.bar.fontFamily : Style.font.family
                   font.pixelSize: Style.font.bodySmall
                   font.bold: sourceRow.selected
+                  renderType: Text.NativeRendering
                   elide: Text.ElideRight
                   width: parent.width
                 }
@@ -281,6 +322,7 @@ PopupCard {
                   color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.5)
                   font.family: root.bar ? root.bar.fontFamily : Style.font.family
                   font.pixelSize: Style.font.caption
+                  renderType: Text.NativeRendering
                   elide: Text.ElideRight
                   width: parent.width
                   visible: text !== ""
